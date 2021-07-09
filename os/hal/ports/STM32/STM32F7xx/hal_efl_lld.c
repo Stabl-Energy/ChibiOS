@@ -642,6 +642,9 @@ flash_error_t efl_lld_start_erase_all(void *instance) {
     /* Clearing error status bits.*/
     stm32_flash_clear_status(devp);
 
+    devp->flash->CR &= ~(FLASH_CR_MER1 | FLASH_CR_MER2 | FLASH_CR_SNB | FLASH_CR_PSIZE);
+    devp->flash->CR |= (STM32_FLASH_PSIZE << FLASH_CR_PSIZE_Pos);
+
     /* Erase bank, depending on mode selection bit. If not set, bank 1 is
      * mapped at FLASH_BASE address (erase bank 2). If set, bank 2 is mapped
      * at FLASH_BASE address (erase bank 1). */
@@ -649,6 +652,8 @@ flash_error_t efl_lld_start_erase_all(void *instance) {
       devp->flash->CR |= FLASH_CR_MER1;
     else
       devp->flash->CR |= FLASH_CR_MER2;
+
+    __DSB();
 
     devp->flash->CR |= FLASH_CR_STRT;
 
