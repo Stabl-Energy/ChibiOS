@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2018 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -22,6 +22,9 @@
  * @{
  */
 
+/*
+ *	17.05.19 - small mod in Tx Buffer Empty handler to not set event flag if callback enabled
+ */
 #include "hal.h"
 
 #if HAL_USE_SERIAL || defined(__DOXYGEN__)
@@ -143,7 +146,8 @@ static const SerialConfig default_config =
   SERIAL_DEFAULT_BITRATE,
   0,
   USART_CR2_STOP1_BITS,
-  0
+  0,
+  0,0,0,0					// Callbacks
 };
 
 #if STM32_SERIAL_USE_USART1 || defined(__DOXYGEN__)
@@ -316,9 +320,18 @@ static void set_error(SerialDriver *sdp, uint32_t isr) {
     sts |= SD_FRAMING_ERROR;
   if (isr & USART_ISR_NE)
     sts |= SD_NOISE_ERROR;
+  if (isr & USART_ISR_LBDF)
+    sts |= SD_BREAK_DETECTED;
+  if ((sdp)->config->rxerr_cb != NULL)
+  {
+    (sdp)->config->rxerr_cb(sdp, sts);
+  }
+  else
+  {
   osalSysLockFromISR();
   chnAddFlagsI(sdp, sts);
   osalSysUnlockFromISR();
+}
 }
 
 #if STM32_SERIAL_USE_USART1 || defined(__DOXYGEN__)
@@ -712,6 +725,8 @@ void sd_lld_start(SerialDriver *sdp, const SerialConfig *config) {
   if (config == NULL)
     config = &default_config;
 
+  sdp->config = config;
+
   if (sdp->state == SD_STOP) {
 #if STM32_SERIAL_USE_USART1
     if (&SD1 == sdp) {
@@ -865,9 +880,16 @@ void sd_lld_serve_interrupt(SerialDriver *sdp) {
      2) FIFO mode is enabled on devices that support it, we need to empty
         the FIFO.*/
   while (isr & USART_ISR_RXNE) {
-    osalSysLockFromISR();
-    sdIncomingDataI(sdp, (uint8_t)u->RDR & sdp->rxmask);
-    osalSysUnlockFromISR();
+    if (sdp->config->rxchar_cb != NULL)
+	{
+        sdp->config->rxchar_cb(sdp, (uint8_t)u->RDR & sdp->rxmask);				// Receive character callback
+	}
+	else
+	{
+	    osalSysLockFromISR();
+	    sdIncomingDataI(sdp, (uint8_t)u->RDR & sdp->rxmask);
+	    osalSysUnlockFromISR();
+	}
 
     isr = u->ISR;
   }
@@ -887,6 +909,9 @@ void sd_lld_serve_interrupt(SerialDriver *sdp) {
       if (b < MSG_OK) {
         chnAddFlagsI(sdp, CHN_OUTPUT_EMPTY);
         u->CR1 = cr1 & ~USART_CR1_TXEIE;
+	    if (sdp->config->txend1_cb != NULL)
+		  sdp->config->txend1_cb(sdp);            // Signal that Tx buffer finished with
+		else chnAddFlagsI(sdp, CHN_OUTPUT_EMPTY);
         osalSysUnlockFromISR();
         break;
       }
@@ -899,12 +924,19 @@ void sd_lld_serve_interrupt(SerialDriver *sdp) {
 
   /* Physical transmission end.*/
   if ((cr1 & USART_CR1_TCIE) && (isr & USART_ISR_TC)) {
-    osalSysLockFromISR();
-    if (oqIsEmptyI(&sdp->oqueue)) {
-      chnAddFlagsI(sdp, CHN_TRANSMISSION_END);
-      u->CR1 = cr1 & ~USART_CR1_TCIE;
-    }
-    osalSysUnlockFromISR();
+    if (sdp->config->txend2_cb != NULL)
+	{
+      sdp->config->txend2_cb(sdp);      // Signal that whole transmit message gone
+	}
+	else
+	{
+	    osalSysLockFromISR();
+	    if (oqIsEmptyI(&sdp->oqueue)) {
+	      chnAddFlagsI(sdp, CHN_TRANSMISSION_END);
+	      u->CR1 = cr1 & ~USART_CR1_TCIE;
+	    }
+	    osalSysUnlockFromISR();
+	}
   }
 }
 
