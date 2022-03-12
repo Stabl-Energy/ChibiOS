@@ -58,20 +58,52 @@ EFlashDriver EFLD1;
 /* Driver local variables and types.                                         */
 /*===========================================================================*/
 
-static const flash_descriptor_t efl_lld_descriptor = {
+static const flash_descriptor_t efl_lld_descriptor_256kb = {
  .attributes        = FLASH_ATTR_ERASED_IS_ONE |
                       FLASH_ATTR_MEMORY_MAPPED |
                       FLASH_ATTR_ECC_CAPABLE   |
                       FLASH_ATTR_ECC_ZERO_LINE_CAPABLE,
  .page_size         = STM32_FLASH_LINE_SIZE,
  .sectors_count     = STM32_FLASH_NUMBER_OF_BANKS *
-                      STM32_FLASH_SECTORS_PER_BANK,
+                      64,
  .sectors           = NULL,
  .sectors_size      = STM32_FLASH_SECTOR_SIZE,
  .address           = (uint8_t *)0x08000000U,
  .size              = STM32_FLASH_NUMBER_OF_BANKS *
-                      STM32_FLASH_SECTORS_PER_BANK *
+                      64 *
                       STM32_FLASH_SECTOR_SIZE
+};
+
+static const flash_descriptor_t efl_lld_descriptor_512kb = {
+        .attributes        = FLASH_ATTR_ERASED_IS_ONE |
+                             FLASH_ATTR_MEMORY_MAPPED |
+                             FLASH_ATTR_ECC_CAPABLE   |
+                             FLASH_ATTR_ECC_ZERO_LINE_CAPABLE,
+        .page_size         = STM32_FLASH_LINE_SIZE,
+        .sectors_count     = STM32_FLASH_NUMBER_OF_BANKS *
+                             128,
+        .sectors           = NULL,
+        .sectors_size      = STM32_FLASH_SECTOR_SIZE,
+        .address           = (uint8_t *)0x08000000U,
+        .size              = STM32_FLASH_NUMBER_OF_BANKS *
+                             128 *
+                             STM32_FLASH_SECTOR_SIZE
+};
+
+static const flash_descriptor_t efl_lld_descriptor_1024kb = {
+        .attributes        = FLASH_ATTR_ERASED_IS_ONE |
+                             FLASH_ATTR_MEMORY_MAPPED |
+                             FLASH_ATTR_ECC_CAPABLE   |
+                             FLASH_ATTR_ECC_ZERO_LINE_CAPABLE,
+        .page_size         = STM32_FLASH_LINE_SIZE,
+        .sectors_count     = STM32_FLASH_NUMBER_OF_BANKS *
+                             256,
+        .sectors           = NULL,
+        .sectors_size      = STM32_FLASH_SECTOR_SIZE,
+        .address           = (uint8_t *)0x08000000U,
+        .size              = STM32_FLASH_NUMBER_OF_BANKS *
+                             256 *
+                             STM32_FLASH_SECTOR_SIZE
 };
 
 /*===========================================================================*/
@@ -191,7 +223,16 @@ const flash_descriptor_t *efl_lld_get_descriptor(void *instance) {
 
   (void)instance;
 
-  return &efl_lld_descriptor;
+     uint16_t flashSize = (*(uint16_t*)0x1FFF75E0); /**< read MCU flash size from fix Flash address */
+
+     /* return lld_descriptor for 256kB MCU*/
+     if(flashSize == 256){return &efl_lld_descriptor_256kb;}
+
+     /* return lld_descriptor for 512kB MCU*/
+     else if(flashSize == 512){return &efl_lld_descriptor_512kb;}
+     
+     /* return lld_descriptor for 1024kB MCU*/
+     else {return &efl_lld_descriptor_1024kb;}
 }
 
 /**
@@ -213,6 +254,7 @@ flash_error_t efl_lld_read(void *instance, flash_offset_t offset,
                            size_t n, uint8_t *rp) {
   EFlashDriver *devp = (EFlashDriver *)instance;
   flash_error_t err = FLASH_NO_ERROR;
+  const flash_descriptor_t efl_lld_descriptor = *efl_lld_get_descriptor(instance);
 
   osalDbgCheck((instance != NULL) && (rp != NULL) && (n > 0U));
   osalDbgCheck((size_t)offset + n <= (size_t)efl_lld_descriptor.size);
@@ -266,6 +308,7 @@ flash_error_t efl_lld_program(void *instance, flash_offset_t offset,
                               size_t n, const uint8_t *pp) {
   EFlashDriver *devp = (EFlashDriver *)instance;
   flash_error_t err = FLASH_NO_ERROR;
+  const flash_descriptor_t efl_lld_descriptor = *efl_lld_get_descriptor(instance);
 
   osalDbgCheck((instance != NULL) && (pp != NULL) && (n > 0U));
   osalDbgCheck((size_t)offset + n <= (size_t)efl_lld_descriptor.size);
@@ -393,6 +436,7 @@ flash_error_t efl_lld_start_erase_all(void *instance) {
 flash_error_t efl_lld_start_erase_sector(void *instance,
                                          flash_sector_t sector) {
   EFlashDriver *devp = (EFlashDriver *)instance;
+  const flash_descriptor_t efl_lld_descriptor = *efl_lld_get_descriptor(instance);
 
   osalDbgCheck(instance != NULL);
   osalDbgCheck(sector < efl_lld_descriptor.sectors_count);
@@ -415,7 +459,7 @@ flash_error_t efl_lld_start_erase_sector(void *instance,
 
 #if defined(FLASH_CR_BKER)
   /* Bank selection.*/
-  if (sector < STM32_FLASH_SECTORS_PER_BANK) {
+  if (sector < (efl_lld_descriptor.sectors_count / STM32_FLASH_NUMBER_OF_BANKS)) {
     /* First bank.*/
     devp->flash->CR &= ~FLASH_CR_BKER;
   }
@@ -423,7 +467,7 @@ flash_error_t efl_lld_start_erase_sector(void *instance,
     /* Second bank.*/
     devp->flash->CR |= FLASH_CR_BKER;
     /* Sector numbers start at 0 again on second bank. */
-    sector -= STM32_FLASH_SECTORS_PER_BANK;
+    sector -= (efl_lld_descriptor.sectors_count / STM32_FLASH_NUMBER_OF_BANKS);
   }
 #endif
 
@@ -509,6 +553,7 @@ flash_error_t efl_lld_query_erase(void *instance, uint32_t *msec) {
  */
 flash_error_t efl_lld_verify_erase(void *instance, flash_sector_t sector) {
   EFlashDriver *devp = (EFlashDriver *)instance;
+  const flash_descriptor_t efl_lld_descriptor = *efl_lld_get_descriptor(instance);
   uint32_t *address;
   flash_error_t err = FLASH_NO_ERROR;
   unsigned i;
