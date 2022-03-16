@@ -45,6 +45,14 @@
 #define FLASH_OPTKEY1                       0x08192A3BU
 #define FLASH_OPTKEY2                       0x4C5D6E7FU
 
+#define STM32_FLASH_FLASHSIZE_REGISTER      (*(uint16_t*)0x1FFF75E0)
+#define STM32_FLASH_FLASHSIZE_256K          256U
+#define STM32_FLASH_FLASHSIZE_512K          512U
+#define STM32_FLASH_FLASHSIZE_1M            1024U
+#define STM32_FLASH_SECTORS_PER_BANK_256K   64U
+#define STM32_FLASH_SECTORS_PER_BANK_512K   128U
+#define STM32_FLASH_SECTORS_PER_BANK_1M     256U
+
 /*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/
@@ -65,12 +73,12 @@ static const flash_descriptor_t efl_lld_descriptor_256kb = {
                       FLASH_ATTR_ECC_ZERO_LINE_CAPABLE,
  .page_size         = STM32_FLASH_LINE_SIZE,
  .sectors_count     = STM32_FLASH_NUMBER_OF_BANKS *
-                      64,
+                      STM32_FLASH_SECTORS_PER_BANK_256K,
  .sectors           = NULL,
  .sectors_size      = STM32_FLASH_SECTOR_SIZE,
  .address           = (uint8_t *)0x08000000U,
  .size              = STM32_FLASH_NUMBER_OF_BANKS *
-                      64 *
+                      STM32_FLASH_SECTORS_PER_BANK_256K *
                       STM32_FLASH_SECTOR_SIZE
 };
 
@@ -81,12 +89,12 @@ static const flash_descriptor_t efl_lld_descriptor_512kb = {
                              FLASH_ATTR_ECC_ZERO_LINE_CAPABLE,
         .page_size         = STM32_FLASH_LINE_SIZE,
         .sectors_count     = STM32_FLASH_NUMBER_OF_BANKS *
-                             128,
+                             STM32_FLASH_SECTORS_PER_BANK_512K,
         .sectors           = NULL,
         .sectors_size      = STM32_FLASH_SECTOR_SIZE,
         .address           = (uint8_t *)0x08000000U,
         .size              = STM32_FLASH_NUMBER_OF_BANKS *
-                             128 *
+                             STM32_FLASH_SECTORS_PER_BANK_512K *
                              STM32_FLASH_SECTOR_SIZE
 };
 
@@ -97,12 +105,12 @@ static const flash_descriptor_t efl_lld_descriptor_1024kb = {
                              FLASH_ATTR_ECC_ZERO_LINE_CAPABLE,
         .page_size         = STM32_FLASH_LINE_SIZE,
         .sectors_count     = STM32_FLASH_NUMBER_OF_BANKS *
-                             256,
+                             STM32_FLASH_SECTORS_PER_BANK_1M,
         .sectors           = NULL,
         .sectors_size      = STM32_FLASH_SECTOR_SIZE,
         .address           = (uint8_t *)0x08000000U,
         .size              = STM32_FLASH_NUMBER_OF_BANKS *
-                             256 *
+                             STM32_FLASH_SECTORS_PER_BANK_1M *
                              STM32_FLASH_SECTOR_SIZE
 };
 
@@ -223,13 +231,11 @@ const flash_descriptor_t *efl_lld_get_descriptor(void *instance) {
 
   (void)instance;
 
-     uint16_t flashSize = (*(uint16_t*)0x1FFF75E0); /**< read MCU flash size from fix Flash address */
-
      /* return lld_descriptor for 256kB MCU*/
-     if(flashSize == 256){return &efl_lld_descriptor_256kb;}
+     if(STM32_FLASH_FLASHSIZE_REGISTER == STM32_FLASH_FLASHSIZE_256K){return &efl_lld_descriptor_256kb;}
 
      /* return lld_descriptor for 512kB MCU*/
-     else if(flashSize == 512){return &efl_lld_descriptor_512kb;}
+     else if(STM32_FLASH_FLASHSIZE_REGISTER == STM32_FLASH_FLASHSIZE_512K){return &efl_lld_descriptor_512kb;}
      
      /* return lld_descriptor for 1024kB MCU*/
      else {return &efl_lld_descriptor_1024kb;}
