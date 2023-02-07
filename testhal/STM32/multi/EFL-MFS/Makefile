@@ -8,10 +8,16 @@ all:
 	+@make --no-print-directory -f ./make/stm32l476_discovery.make all
 	@echo ====================================================================
 	@echo
+	@echo === Building for STM32F767ZI-Nucleo ===============================
+	+@make --no-print-directory -f ./make/stm32f767zi_nucleo.make all
+	@echo ====================================================================
+	@echo
 
 clean:
 	@echo
 	+@make --no-print-directory -f ./make/stm32l476_discovery.make clean
+	@echo
+	+@make --no-print-directory -f ./make/stm32f767zi_nucleo.make clean
 	@echo
 
 #

@@ -25,16 +25,6 @@
 
 #include "portab.h"
 
-const MFSConfig mfscfg1 = {
-  .flashp           = (BaseFlash *)&EFLD1,
-  .erased           = 0xFFFFFFFFU,
-  .bank_size        = 4096U,
-  .bank0_start      = 128U,
-  .bank0_sectors    = 2U,
-  .bank1_start      = 130U,
-  .bank1_sectors    = 2U
-};
-
 /*
  * LED blinker thread, times are in milliseconds.
  */
