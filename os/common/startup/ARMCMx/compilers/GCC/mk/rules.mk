@@ -283,6 +283,26 @@ clean: CLEAN_RULE_HOOK
 
 CLEAN_RULE_HOOK:
 
+## Target to output preprocessed source files
+PREPROC_DIR	:= $(BUILDDIR)/preproc
+PREPROC_OUT := $(addprefix $(PREPROC_DIR)/, $(notdir $(TCSRC:.c=.i)))
+
+$(PREPROC_OUT): | $(BUILDDIR) $(DEPDIR) $(PREPROC_DIR)
+
+$(PREPROC_DIR):
+	@mkdir -p $(PREPROC_DIR)
+
+$(PREPROC_OUT) : $(PREPROC_DIR)/%.i : %.c $(MAKEFILE_LIST)
+ifeq ($(USE_VERBOSE_COMPILE),yes)
+	@echo
+	$(CC) -E $(CFLAGS) -I. $(IINCDIR) $< -o $@
+else
+	@echo Creating $@
+	@$(CC) -E $(CFLAGS) -I. $(IINCDIR) $< -o $@
+endif
+
+preprocessor-out: $(PREPROC_OUT)
+
 #
 # Include the dependency files, should be the last of the makefile
 #
