@@ -67,9 +67,9 @@
 /**
  * @brief   Use a no-op diagnostic output macro by default.
  */
-#if !defined(LWIP_PLATFORM_DIAG)
-#define LWIP_PLATFORM_DIAG(x)
-#endif
+// #if !defined(LWIP_PLATFORM_DIAG)
+// #define LWIP_PLATFORM_DIAG(x)
+// #endif
 
 /**
  * @brief   Halt the system on lwIP assert failure by default.

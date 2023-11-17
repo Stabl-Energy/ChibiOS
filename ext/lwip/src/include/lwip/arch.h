@@ -74,18 +74,28 @@
 
 /** Platform specific diagnostic output.\n
  * Note the default implementation pulls in printf, which may
- * in turn pull in a lot of standard libary code. In resource-constrained 
+ * in turn pull in a lot of standard libary code. In resource-constrained
  * systems, this should be defined to something less resource-consuming.
  */
+
+    // BaseSequentialStream *stream = (BaseSequentialStream *)&STDOUT_SD;
+
+    // while (true) {
+    //     chMBFetchTimeout(&serial_mb, &msg, TIME_INFINITE);
+    //     const char *s_msg = (const char *)msg;
+    //     chprintf(stream, "%s \r\n", s_msg);
 #ifndef LWIP_PLATFORM_DIAG
-#define LWIP_PLATFORM_DIAG(x) do {printf x;} while(0)
-#include <stdio.h>
-#include <stdlib.h>
+#include "hal.h"
+#include "chprintf.h"
+#define LWIP_PLATFORM_DIAG(...) chprintf ((BaseSequentialStream *)&STDOUT_SD, __VA_ARGS__)
+// #define LWIP_PLATFORM_DIAG(...) do {printf x;} while(0)
+// #include <stdio.h>
+// #include <stdlib.h>
 #endif
 
 /** Platform specific assertion handling.\n
  * Note the default implementation pulls in printf, fflush and abort, which may
- * in turn pull in a lot of standard libary code. In resource-constrained 
+ * in turn pull in a lot of standard libary code. In resource-constrained
  * systems, this should be defined to something less resource-consuming.
  */
 #ifndef LWIP_PLATFORM_ASSERT
@@ -145,30 +155,30 @@ typedef uintptr_t mem_ptr_t;
 
 /* Define (sn)printf formatters for these lwIP types */
 #if !LWIP_NO_INTTYPES_H
-#include <inttypes.h>
+// #include <inttypes.h>
 #ifndef X8_F
-#define X8_F  "02" PRIx8
+#define X8_F  "02" "x"
 #endif
 #ifndef U16_F
-#define U16_F PRIu16
+#define U16_F "u"
 #endif
 #ifndef S16_F
-#define S16_F PRId16
+#define S16_F "d"
 #endif
 #ifndef X16_F
-#define X16_F PRIx16
+#define X16_F "X"
 #endif
 #ifndef U32_F
-#define U32_F PRIu32
+#define U32_F "u"
 #endif
 #ifndef S32_F
-#define S32_F PRId32
+#define S32_F "d"
 #endif
 #ifndef X32_F
-#define X32_F PRIx32
+#define X32_F "x"
 #endif
 #ifndef SZT_F
-#define SZT_F PRIuPTR
+#define SZT_F "u"
 #endif
 #endif
 

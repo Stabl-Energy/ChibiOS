@@ -37,6 +37,8 @@
 #ifndef LWIP_HDR_DEBUG_H
 #define LWIP_HDR_DEBUG_H
 
+#define LWIP_DEBUG 1
+
 #include "lwip/arch.h"
 #include "lwip/opt.h"
 
@@ -147,7 +149,7 @@
                                    ((debug) & LWIP_DBG_ON) && \
                                    ((debug) & LWIP_DBG_TYPES_ON) && \
                                    ((s16_t)((debug) & LWIP_DBG_MASK_LEVEL) >= LWIP_DBG_MIN_LEVEL)) { \
-                                 LWIP_PLATFORM_DIAG(message); \
+                                 LWIP_PLATFORM_DIAG message; \
                                  if ((debug) & LWIP_DBG_HALT) { \
                                    while(1); \
                                  } \
