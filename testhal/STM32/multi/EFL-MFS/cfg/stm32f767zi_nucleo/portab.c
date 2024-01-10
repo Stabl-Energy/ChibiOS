@@ -35,13 +35,16 @@
 /* Module exported variables.                                                */
 /*===========================================================================*/
 
+/* Single bank test configuration: use last 4 256k sectors. This requires
+ * increasing MFS_CFG_MAX_RECORDS (f.e. to 8192 via Makefile) for the tests
+ * to succeed. */
 const MFSConfig mfscfg1 = {
   .flashp           = (BaseFlash *)&EFLD1,
   .erased           = 0xFFFFFFFFU,
-  .bank_size        = 4096U,
-  .bank0_start      = 128U,
+  .bank_size        = 524288U,
+  .bank0_start      = 8U,
   .bank0_sectors    = 2U,
-  .bank1_start      = 130U,
+  .bank1_start      = 10U,
   .bank1_sectors    = 2U
 };
 
@@ -66,7 +69,7 @@ void portab_setup(void) {
   /*
    * LED line as output.
    */
-  palSetLineMode(LINE_LED_GREEN, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetLineMode(LINE_LED1, PAL_MODE_OUTPUT_PUSHPULL);
 }
 
 /** @} */
